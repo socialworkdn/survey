@@ -1,31 +1,270 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>แบบประเมินความพึงพอใจ สังคมสงเคราะห์ รพ.ดำเนินสะดวก</title> <link rel="icon" type="image/png" href="https://img2.pic.in.th/Logo-sw.png">
-    <style>
-        body, html {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            overflow: hidden; /* ซ่อน Scrollbar ของหน้าหลัก */
-        }
-        iframe {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>แบบประเมินความพึงพอใจ</title>
+  <link rel="icon" href="https://img2.pic.in.th/Logo-sw6944b6d81ee7918a02.png">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Sarabun', sans-serif; }
+    .score-card { transition: all .15s ease; }
+    .score-card input:checked + .score-card-inner {
+      border-color: #2563eb;
+      background-color: #eff6ff;
+      box-shadow: 0 0 0 2px #2563eb inset;
+    }
+    .score-card input:checked + .score-card-inner .score-emoji {
+      transform: scale(1.15);
+    }
+    #progressBar { transition: width .25s ease; }
+  </style>
 </head>
-<body>
+<body class="bg-blue-50 py-10">
 
-    <iframe src="https://script.google.com/macros/s/AKfycbw-y5OWGjZk8mCbD2rEFV7Yb-B_bu7fejZTLOGha8InP82XHjmBXcWJK_V38KoXYiy_zg/exec">
-        เบราว์เซอร์ของคุณไม่รองรับการแสดงผล iframe
-    </iframe>
+  <!-- แถบความคืบหน้า -->
+  <div class="sticky top-0 z-10 bg-blue-100 h-2">
+    <div id="progressBar" class="bg-blue-600 h-2" style="width:0%"></div>
+  </div>
 
+  <div class="max-w-4xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden mt-2">
+    <div class="bg-blue-600 p-6 text-center text-white relative">
+      <img src="https://img2.pic.in.th/Logo-sw6944b6d81ee7918a02.png" alt="Logo"
+           onerror="this.style.display='none'"
+           class="mx-auto h-24 w-24 object-contain bg-white rounded-full p-1 mb-4 shadow">
+      <h2 class="text-2xl font-bold">แบบประเมินความพึงพอใจ</h2>
+      <p class="mt-2 text-blue-100">กลุ่มงานสังคมสงเคราะห์ โรงพยาบาลสมเด็จพระสังฆราช (อมฺพรมหาเถร)</p>
+    </div>
+
+    <!-- แจ้งเตือนถ้าเชื่อมต่อ API ไม่ได้ -->
+    <div id="apiWarning" class="hidden bg-yellow-50 border-b border-yellow-300 text-yellow-800 text-sm p-3 text-center">
+      ⚠️ ไม่สามารถเชื่อมต่อระบบได้ในขณะนี้ กรุณาลองใหม่อีกครั้ง
+    </div>
+
+    <form id="surveyForm" onsubmit="submitForm(event, this)" class="p-8">
+
+      <h3 class="text-xl font-bold text-blue-800 border-b-2 border-blue-200 pb-2 mb-6">ส่วนที่ 1: ข้อมูลทั่วไป</h3>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div>
+          <label class="block font-semibold mb-2">ผู้ตอบแบบสอบถาม <span class="text-red-500">*</span></label>
+          <select name="respondent" required class="w-full p-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500 outline-none">
+            <option value="">-- เลือก --</option>
+            <option value="ผู้ป่วย">ผู้ป่วย</option>
+            <option value="ญาติผู้ป่วย">ญาติผู้ป่วย</option>
+            <option value="เจ้าหน้าที่โรงพยาบาล">เจ้าหน้าที่โรงพยาบาล</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block font-semibold mb-2">เพศ <span class="text-red-500">*</span></label>
+          <select name="gender" required class="w-full p-2 border rounded-lg focus:ring-blue-500 outline-none">
+            <option value="">-- เลือก --</option>
+            <option value="ชาย">ชาย</option>
+            <option value="หญิง">หญิง</option>
+            <option value="LGBT+">LGBT+</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block font-semibold mb-2">อายุ (ปี) <span class="text-red-500">*</span></label>
+          <input type="number" name="age" required min="1" max="120" class="w-full p-2 border rounded-lg outline-none focus:ring-blue-500">
+        </div>
+
+        <div>
+          <label class="block font-semibold mb-2">ระดับการศึกษา <span class="text-red-500">*</span></label>
+          <select name="education" required class="w-full p-2 border rounded-lg focus:ring-blue-500 outline-none">
+            <option value="">-- เลือก --</option>
+            <option value="ไม่ได้ศึกษา">ไม่ได้ศึกษา</option>
+            <option value="ประถมศึกษา">ประถมศึกษา</option>
+            <option value="มัธยมศึกษา">มัธยมศึกษา</option>
+            <option value="ปวช/ปวส.">ปวช/ปวส.</option>
+            <option value="ปริญญาตรี">ปริญญาตรี</option>
+            <option value="สูงกว่าปริญญาตรี">สูงกว่าปริญญาตรี</option>
+          </select>
+        </div>
+
+        <div class="md:col-span-2">
+          <label class="block font-semibold mb-2">สิทธิการรักษาพยาบาล <span class="text-red-500">*</span></label>
+          <select name="medicalRight" id="medicalRight" onchange="toggleOther()" required class="w-full p-2 border rounded-lg focus:ring-blue-500 outline-none">
+            <option value="">-- เลือก --</option>
+            <option value="ประกันสุขภาพแห่งชาติ (บัตรทอง)">ประกันสุขภาพแห่งชาติ (บัตรทอง)</option>
+            <option value="ประกันสังคม">ประกันสังคม</option>
+            <option value="เบิกจ่ายตรง (ข้าราชการ)">เบิกจ่ายตรง (ข้าราชการ)</option>
+            <option value="อื่นๆ">อื่นๆ</option>
+          </select>
+          <input type="text" name="medicalRightOther" id="medicalRightOther" placeholder="โปรดระบุสิทธิการรักษาพยาบาล" class="w-full p-2 mt-3 border rounded-lg hidden outline-none focus:ring-blue-500">
+        </div>
+      </div>
+
+      <h3 class="text-xl font-bold text-blue-800 border-b-2 border-blue-200 pb-2 mb-4">ส่วนที่ 2: ความพึงพอใจต่องานบริการสังคมสงเคราะห์</h3>
+      <p class="mb-4 text-gray-600 bg-gray-50 p-4 rounded-lg text-sm">
+        เลือกระดับความพึงพอใจของท่านในแต่ละหัวข้อ
+      </p>
+
+      <div class="space-y-6 mb-8">
+        <script>
+          const questions = [
+            { id: "q1", icon: "🩺", text: "1. การให้ความรู้คำแนะนำด้านการขึ้นทะเบียนสิทธิและการใช้สิทธิของผู้ป่วยถูกต้องเสมอภาค" },
+            { id: "q2", icon: "⏱️", text: "2. ให้บริการตามขั้นตอนอย่างรวดเร็วและทันเวลา" },
+            { id: "q3", icon: "🙏", text: "3. เจ้าหน้าที่พูดจาสุภาพเอาใจใส่กระตือรือร้นในการให้บริการ" },
+            { id: "q4", icon: "🏥", text: "4. สถานที่ให้บริการสิ่งแวดล้อมสะอาดสะดวกต่อการติดต่อขอรับบริการ" },
+            { id: "q5", icon: "⭐", text: "5. ความพึงพอใจโดยรวมที่มีต่องานสังคมสงเคราะห์" }
+          ];
+
+          const scoreOptions = [
+            { score: 5, emoji: "😍", label: "พึงพอใจมาก" },
+            { score: 4, emoji: "🙂", label: "พึงพอใจ" },
+            { score: 3, emoji: "😐", label: "ปานกลาง" },
+            { score: 2, emoji: "🙁", label: "ไม่พึงพอใจ" },
+            { score: 1, emoji: "😞", label: "ควรปรับปรุง" }
+          ];
+
+          questions.forEach(q => {
+            document.write(`
+              <div class="bg-gray-50 p-4 rounded-lg border">
+                <p class="font-medium mb-3">${q.icon} ${q.text} <span class="text-red-500">*</span></p>
+                <div class="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-3">
+                  ${scoreOptions.map(opt => `
+                    <label class="score-card cursor-pointer">
+                      <input type="radio" name="${q.id}" value="${opt.score}" required class="hidden">
+                      <div class="score-card-inner flex flex-col items-center justify-center text-center bg-white px-2 py-3 rounded-xl border-2 border-gray-200 hover:border-blue-300 hover:bg-blue-50">
+                        <span class="score-emoji text-2xl sm:text-3xl transition-transform">${opt.emoji}</span>
+                        <span class="text-xs sm:text-sm font-semibold text-gray-700 mt-1">${opt.label}</span>
+                      </div>
+                    </label>
+                  `).join('')}
+                </div>
+              </div>
+            `);
+          });
+        </script>
+      </div>
+
+      <div class="mb-8">
+        <label class="block font-semibold mb-2">ข้อเสนอแนะเพื่อพัฒนาการให้บริการ</label>
+        <textarea name="suggestion" rows="3" maxlength="1000" class="w-full p-3 border rounded-lg outline-none focus:ring-blue-500" placeholder="ความคิดเห็นเพิ่มเติม..."></textarea>
+      </div>
+
+      <button type="submit" id="submitBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition transform hover:-translate-y-1 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none">
+        <span id="submitBtnText">บันทึกข้อมูล</span>
+        <svg id="submitSpinner" class="hidden animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+        </svg>
+      </button>
+    </form>
+  </div>
+
+  <script>
+    // ⚠️ แก้ไข URL นี้เป็น Web App URL ของ Google Apps Script หลัง Deploy
+    // ตัวอย่าง: https://script.google.com/macros/s/AKfycbxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx/exec
+    const API_URL = "https://script.google.com/macros/s/AKfycbw-y5OWGjZk8mCbD2rEFV7Yb-B_bu7fejZTLOGha8InP82XHjmBXcWJK_V38KoXYiy_zg/exec";
+
+    function toggleOther() {
+      const select = document.getElementById('medicalRight');
+      const otherInput = document.getElementById('medicalRightOther');
+      if (select.value === 'อื่นๆ') {
+        otherInput.classList.remove('hidden');
+        otherInput.setAttribute('required', 'true');
+      } else {
+        otherInput.classList.add('hidden');
+        otherInput.removeAttribute('required');
+        otherInput.value = '';
+      }
+      updateProgress();
+    }
+
+    // ---------- Progress bar ----------
+    function updateProgress() {
+      const form = document.getElementById('surveyForm');
+      const requiredEls = Array.from(form.querySelectorAll('[required]'));
+      const seenRadioNames = new Set();
+      let totalFields = 0;
+      let filledFields = 0;
+
+      requiredEls.forEach(el => {
+        if (el.type === 'radio') {
+          if (seenRadioNames.has(el.name)) return;
+          seenRadioNames.add(el.name);
+          totalFields++;
+          if (form.querySelector(`input[name="${el.name}"]:checked`)) filledFields++;
+        } else {
+          if (el.offsetParent === null) return;
+          totalFields++;
+          if (el.value && el.value.trim() !== '') filledFields++;
+        }
+      });
+
+      const percent = totalFields === 0 ? 0 : Math.round((filledFields / totalFields) * 100);
+      document.getElementById('progressBar').style.width = percent + '%';
+    }
+
+    document.getElementById('surveyForm').addEventListener('input', updateProgress);
+    document.getElementById('surveyForm').addEventListener('change', updateProgress);
+    window.addEventListener('DOMContentLoaded', updateProgress);
+
+    // ---------- Submit ----------
+    function setSubmitLoading(isLoading) {
+      const btn = document.getElementById('submitBtn');
+      const text = document.getElementById('submitBtnText');
+      const spinner = document.getElementById('submitSpinner');
+      btn.disabled = isLoading;
+      spinner.classList.toggle('hidden', !isLoading);
+      text.textContent = isLoading ? 'กำลังบันทึก...' : 'บันทึกข้อมูล';
+    }
+
+    // แปลงฟอร์มเป็น plain object สำหรับส่งเป็น JSON
+    function formToObject(form) {
+      const fd = new FormData(form);
+      const obj = {};
+      fd.forEach((value, key) => { obj[key] = value; });
+      return obj;
+    }
+
+    function submitForm(event, form) {
+      event.preventDefault();
+      setSubmitLoading(true);
+
+      Swal.fire({
+        title: 'กำลังบันทึกข้อมูล...',
+        text: 'กรุณารอสักครู่',
+        allowOutsideClick: false,
+        didOpen: () => { Swal.showLoading(); }
+      });
+
+      const payload = formToObject(form);
+
+      // หมายเหตุ: ใช้ Content-Type: text/plain โดยตั้งใจ (ไม่ใช่ application/json)
+      // เพื่อให้ browser ส่งเป็น "simple request" ไม่ trigger CORS preflight (OPTIONS)
+      // ซึ่ง Google Apps Script ไม่รองรับ — ฝั่ง server จะ parse JSON เองจาก e.postData.contents
+      fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload)
+      })
+        .then(res => {
+          if (!res.ok) throw new Error('เชื่อมต่อ API ไม่สำเร็จ (HTTP ' + res.status + ')');
+          return res.json();
+        })
+        .then(response => {
+          setSubmitLoading(false);
+          if (response.success) {
+            Swal.fire({ icon: 'success', title: 'สำเร็จ', text: response.message, confirmButtonColor: '#2563eb' });
+            form.reset();
+            toggleOther();
+            updateProgress();
+          } else {
+            Swal.fire({ icon: 'error', title: 'ข้อมูลไม่ถูกต้อง', text: response.message });
+          }
+        })
+        .catch(error => {
+          setSubmitLoading(false);
+          document.getElementById('apiWarning').classList.remove('hidden');
+          Swal.fire({ icon: 'error', title: 'ข้อผิดพลาดของระบบ', text: error.message || 'กรุณาลองใหม่อีกครั้ง' });
+        });
+    }
+  </script>
 </body>
 </html>
